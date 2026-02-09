@@ -126,10 +126,12 @@ def detect_cycles(nodes, node_by_id):
 
 
 def generate_dag_svg(nodes, section_filter=None):
-    """networkxを使ってSVG形式でDAGを生成
+    """タイムライン形式でDAGを生成（縦軸=タスク順序、横軸=日付）
     section_filter: セクション名を指定すると、そのセクションのノードのみを表示
     """
     try:
+        from datetime import datetime
+
         import networkx as nx
 
         # セクションでフィルタ
@@ -138,65 +140,120 @@ def generate_dag_svg(nodes, section_filter=None):
         else:
             filtered_nodes = nodes
 
+        # グラフ構造を作成（依存関係の矢印描画用）
         G = nx.DiGraph()
-
         for node in filtered_nodes:
             G.add_node(node["id"], label=node["label"])
-
         for node in filtered_nodes:
             for dep_id in node.get("depends_on", []):
-                # 依存先がフィルタ済みノードに含まれる場合のみエッジを追加
                 if any(n["id"] == dep_id for n in filtered_nodes):
                     G.add_edge(node["id"], dep_id)
 
-        # 階層的レイアウトを使用
-        try:
-            from networkx.drawing.nx_agraph import graphviz_layout
+        # 日付範囲を取得
+        valid_dates = []
+        for node in filtered_nodes:
+            deadline = node.get("deadline", "")
+            if deadline:
+                try:
+                    valid_dates.append(datetime.strptime(deadline, "%Y-%m-%d"))
+                except:
+                    pass
 
-            pos = graphviz_layout(G, prog="dot")
-        except:
-            pos = nx.spring_layout(G, k=3, iterations=50, seed=42)
+        if not valid_dates:
+            # 日付がない場合はフォールバック
+            min_date = datetime(2023, 1, 1)
+            max_date = datetime(2023, 12, 31)
+        else:
+            min_date = min(valid_dates)
+            max_date = max(valid_dates)
+
+        date_range = (max_date - min_date).days
+        if date_range == 0:
+            date_range = 1
 
         # SVG生成
-        width, height = 1000, 800
+        width, height = 1200, max(600, len(filtered_nodes) * 50 + 100)
+        margin_left = 100
+        margin_right = 50
+        margin_top = 80
+        margin_bottom = 50
 
-        # ノード位置を正規化
-        if pos:
-            xs = [p[0] for p in pos.values()]
-            ys = [p[1] for p in pos.values()]
-            min_x, max_x = min(xs), max(xs)
-            min_y, max_y = min(ys), max(ys)
+        usable_width = width - margin_left - margin_right
+        usable_height = height - margin_top - margin_bottom
 
-            margin = 60
-            scale_x = (width - 2 * margin) / (max_x - min_x) if max_x != min_x else 1
-            scale_y = (height - 2 * margin) / (max_y - min_y) if max_y != min_y else 1
+        # タスク位置を計算（縦軸=タスク順序、横軸=日付）
+        normalized_pos = {}
+        task_height = usable_height / max(len(filtered_nodes), 1)
 
-            normalized_pos = {}
-            for node_id, (x, y) in pos.items():
-                nx_pos = margin + (x - min_x) * scale_x
-                ny_pos = margin + (y - min_y) * scale_y
-                normalized_pos[node_id] = (nx_pos, ny_pos)
-        else:
-            normalized_pos = {}
+        for i, node in enumerate(filtered_nodes):
+            node_id = node["id"]
+            deadline = node.get("deadline", "")
+
+            # Y座標: タスクの順序（上から下へ）
+            y_pos = margin_top + i * task_height + task_height / 2
+
+            # X座標: 日付に基づく位置
+            if deadline:
+                try:
+                    node_date = datetime.strptime(deadline, "%Y-%m-%d")
+                    days_from_start = (node_date - min_date).days
+                    x_pos = margin_left + (days_from_start / date_range) * usable_width
+                except:
+                    x_pos = margin_left + usable_width / 2
+            else:
+                x_pos = margin_left + usable_width / 2
+
+            normalized_pos[node_id] = (x_pos, y_pos)
+
+            normalized_pos[node_id] = (x_pos, y_pos)
 
         # SVG開始
         svg = f'<svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">'
         svg += '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">'
         svg += '<polygon points="0 0, 10 3.5, 0 7" fill="#666" class="dag-arrow-marker" data-node-id="marker"/></marker></defs>'
 
-        # エッジ描画
+        # 背景とグリッド
+        svg += f'<rect width="{width}" height="{height}" fill="#f9f9f9"/>'
+
+        # X軸（日付軸）のラベル
+        svg += '<g class="x-axis">'
+        svg += f'<line x1="{margin_left}" y1="{margin_top - 20}" x2="{width - margin_right}" y2="{margin_top - 20}" stroke="#333" stroke-width="1"/>'
+
+        # 日付ラベルを表示
+        num_labels = min(8, date_range + 1)
+        for i in range(num_labels):
+            date_offset = (date_range * i) / (num_labels - 1) if num_labels > 1 else 0
+            label_date = min_date + pd.Timedelta(days=int(date_offset))
+            x_label = (
+                margin_left + (date_offset / date_range) * usable_width
+                if date_range > 0
+                else margin_left
+            )
+            svg += f'<line x1="{x_label}" y1="{margin_top - 20}" x2="{x_label}" y2="{margin_top - 15}" stroke="#333" stroke-width="1"/>'
+            svg += f'<text x="{x_label}" y="{margin_top - 25}" text-anchor="middle" fill="#333" font-size="10">{label_date.strftime("%Y-%m-%d")}</text>'
+
+        svg += "</g>"
+
+        # Y軸（タスク軸）のラベル
+        svg += '<g class="y-axis">'
+        svg += f'<text x="{margin_left - 10}" y="{margin_top - 30}" text-anchor="end" fill="#333" font-size="12" font-weight="bold">タスク</text>'
+        svg += f'<text x="{width / 2}" y="{margin_top - 45}" text-anchor="middle" fill="#333" font-size="14" font-weight="bold">ワークフローDAG（タイムライン表示）</text>'
+        svg += "</g>"
+
+        # エッジ描画（依存関係の矢印）
         for edge in G.edges():
             from_node, to_node = edge
             if from_node in normalized_pos and to_node in normalized_pos:
                 x1, y1 = normalized_pos[from_node]
                 x2, y2 = normalized_pos[to_node]
 
-                # 矢印が長方形の端で終わるように調整
+                # 矢印がノードの端で終わるように調整
                 dx, dy = x2 - x1, y2 - y1
                 length = (dx**2 + dy**2) ** 0.5
                 if length > 0:
-                    x2 = x2 - (dx / length) * 40
-                    y2 = y2 - (dy / length) * 15
+                    # ノードサイズを考慮した調整
+                    x2 = x2 - (dx / length) * 60
+                    y2 = y2 - (dy / length) * 20
 
                 svg += f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" '
                 svg += 'stroke="#666" stroke-width="2" marker-end="url(#arrowhead)" '
@@ -205,14 +262,18 @@ def generate_dag_svg(nodes, section_filter=None):
         # ノード描画
         for node_id, (x, y) in normalized_pos.items():
             node_data = next((n for n in filtered_nodes if n["id"] == node_id), None)
-            label = node_data["label"][:20] if node_data else node_id
+            if node_data:
+                label = node_data["label"][:20]
+                deadline = node_data.get("deadline", "")
 
-            svg += f'<g class="dag-node" data-node-id="{node_id}">'
-            svg += f'<rect x="{x - 50}" y="{y - 20}" width="100" height="40" '
-            svg += 'fill="#4ECDC4" stroke="#333" stroke-width="2" rx="5"/>'
-            svg += f'<text x="{x}" y="{y - 5}" text-anchor="middle" fill="#333" font-size="11" font-weight="bold">{node_id}</text>'
-            svg += f'<text x="{x}" y="{y + 10}" text-anchor="middle" fill="#333" font-size="9">{label[:15]}</text>'
-            svg += "</g>"
+                svg += f'<g class="dag-node" data-node-id="{node_id}">'
+                svg += f'<rect x="{x - 60}" y="{y - 20}" width="120" height="40" '
+                svg += 'fill="#4ECDC4" stroke="#333" stroke-width="2" rx="5"/>'
+                svg += f'<text x="{x}" y="{y - 5}" text-anchor="middle" fill="#333" font-size="11" font-weight="bold">{node_id}</text>'
+                svg += f'<text x="{x}" y="{y + 10}" text-anchor="middle" fill="#333" font-size="9">{label[:15]}</text>'
+                if deadline:
+                    svg += f'<text x="{x}" y="{y + 35}" text-anchor="middle" fill="#666" font-size="8">{deadline}</text>'
+                svg += "</g>"
 
         svg += "</svg>"
         return svg
@@ -433,6 +494,7 @@ def load_tasks_from_nodes(nodes):
             "start": node.get("deadline", ""),
             "end": node.get("deadline", ""),
             "next_to": node["depends_on"][0] if node.get("depends_on") else "",
+            "next_to_list": [dep for dep in node.get("depends_on", []) if dep],
             "doc": node.get("doc", ""),
             "action": node.get("action", ""),
             "lesson": node.get("note", ""),
@@ -491,13 +553,17 @@ def save_nodes_from_tasks(tasks):
     """タスクをノード形式に変換して保存"""
     nodes = []
     for task in tasks:
+        depends_on_list = [dep for dep in task.get("next_to_list", []) if dep]
+        if not depends_on_list:
+            single_dep = task.get("next_to", "")
+            depends_on_list = [single_dep] if single_dep else []
         node = {
             "id": task["id"],
             "label": task["task"],
             "deadline": task.get("end", task.get("start", "")),
             "decision": task.get("decision", False),
             "note": task.get("lesson", ""),
-            "depends_on": [task["next_to"]] if task.get("next_to") else [],
+            "depends_on": depends_on_list,
             "qms_path": task.get("qms_path", ""),
             "knowledge_dir": task.get("knowledge_dir", ""),
             "section": task.get("section", ""),
@@ -588,6 +654,7 @@ def update():
         # フォームの各タスク行を処理
         i = 0
         while f"id_{i}" in request.form:
+            next_to_list = [dep for dep in request.form.getlist(f"next_to_{i}") if dep]
             task = {
                 "id": request.form.get(f"id_{i}", ""),
                 "section": request.form.get(f"section_{i}", ""),
@@ -595,6 +662,7 @@ def update():
                 "start": request.form.get(f"start_{i}", ""),
                 "end": request.form.get(f"end_{i}", ""),
                 "next_to": request.form.get(f"next_to_{i}", ""),
+                "next_to_list": next_to_list,
                 "doc": request.form.get(f"doc_{i}", ""),
                 "action": request.form.get(f"action_{i}", ""),
                 "lesson": request.form.get(f"lesson_{i}", ""),

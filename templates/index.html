@@ -166,6 +166,78 @@
             cursor: not-allowed;
         }
 
+        .multi-select-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .multi-select-display {
+            min-height: 28px;
+            padding: 4px 6px;
+            border: 1px solid #ccc;
+            border-radius: 2px;
+            background: white;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .multi-select-display:hover {
+            border-color: #0066cc;
+        }
+
+        .multi-select-tag {
+            background: #0066cc;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .multi-select-tag-remove {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .multi-select-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .multi-select-dropdown.show {
+            display: block;
+        }
+
+        .multi-select-option {
+            padding: 6px 8px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .multi-select-option:hover {
+            background: #f0f0f0;
+        }
+
+        .multi-select-option input[type="checkbox"] {
+            margin-right: 6px;
+        }
+
         .images-section {
             display: block;
             margin-top: 20px;
@@ -409,6 +481,7 @@
                         </thead>
                         <tbody>
                             {% for task in tasks %}
+                            {% set row_index = loop.index0 %}
                             <tr>
                                 <td>
                                     <input type="text" name="id_{{ loop.index0 }}"
@@ -431,12 +504,34 @@
                                         value="{{ task.end }}">
                                 </td>
                                 <td>
-                                    <select name="next_to_{{ loop.index0 }}" style="width: 100%; padding: 4px;">
-                                        <option value="">-</option>
-                                        {% for t in all_tasks %}
-                                        <option value="{{ t.id }}" {% if task.next_to == t.id %}selected{% endif %}>{{ t.id }} - {{ t.task }}</option>
-                                        {% endfor %}
-                                    </select>
+                                    <div class="multi-select-container" id="multi-select-{{ loop.index0 }}">
+                                        <div class="multi-select-display" onclick="toggleMultiSelect({{ loop.index0 }})">
+                                            {% if task.next_to_list and task.next_to_list|length > 0 %}
+                                                {% for dep_id in task.next_to_list %}
+                                                <span class="multi-select-tag">
+                                                    {{ dep_id }}
+                                                    <span class="multi-select-tag-remove" onclick="event.stopPropagation(); removeTag({{ row_index }}, '{{ dep_id }}')">×</span>
+                                                </span>
+                                                {% endfor %}
+                                            {% else %}
+                                                <span style="color: #999;">選択なし</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="multi-select-dropdown" id="dropdown-{{ loop.index0 }}">
+                                            {% for t in all_tasks %}
+                                            {% if t.id != task.id %}
+                                            <label class="multi-select-option">
+                                                <input type="checkbox"
+                                                       name="next_to_{{ row_index }}"
+                                                       value="{{ t.id }}"
+                                                       {% if task.next_to_list and t.id in task.next_to_list %}checked{% endif %}
+                                                       onchange="updateMultiSelectDisplay({{ row_index }})">
+                                                {{ t.id }} - {{ t.task }}
+                                            </label>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
                                 </td>
                                 <td style="text-align: center;">
                                     <input type="checkbox" name="decision_{{ loop.index0 }}"
@@ -613,6 +708,56 @@
             document.addEventListener('keydown', (event) => {
                 if (event.key === 'Escape') {
                     closeModal();
+                }
+            });
+
+            function toggleMultiSelect(index) {
+                const dropdown = document.getElementById('dropdown-' + index);
+                if (!dropdown) return;
+                dropdown.classList.toggle('show');
+
+                document.querySelectorAll('.multi-select-dropdown').forEach(dd => {
+                    if (dd.id !== 'dropdown-' + index) {
+                        dd.classList.remove('show');
+                    }
+                });
+            }
+
+            function updateMultiSelectDisplay(index) {
+                const container = document.getElementById('multi-select-' + index);
+                if (!container) return;
+                const display = container.querySelector('.multi-select-display');
+                const checkboxes = container.querySelectorAll('input[type="checkbox"]:checked');
+
+                let html = '';
+                if (checkboxes.length === 0) {
+                    html = '<span style="color: #999;">選択なし</span>';
+                } else {
+                    checkboxes.forEach(cb => {
+                        html += `<span class="multi-select-tag">
+                                    ${cb.value}
+                                    <span class="multi-select-tag-remove" onclick="event.stopPropagation(); removeTag(${index}, '${cb.value}')">×</span>
+                                </span>`;
+                    });
+                }
+                display.innerHTML = html;
+            }
+
+            function removeTag(index, taskId) {
+                const container = document.getElementById('multi-select-' + index);
+                if (!container) return;
+                const checkbox = container.querySelector(`input[value="${taskId}"]`);
+                if (checkbox) {
+                    checkbox.checked = false;
+                    updateMultiSelectDisplay(index);
+                }
+            }
+
+            document.addEventListener('click', (event) => {
+                if (!event.target.closest('.multi-select-container')) {
+                    document.querySelectorAll('.multi-select-dropdown').forEach(dd => {
+                        dd.classList.remove('show');
+                    });
                 }
             });
 

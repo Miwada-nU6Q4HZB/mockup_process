@@ -4,10 +4,11 @@ Flask-based workflow visualization tool with DAG (Directed Acyclic Graph) and ti
 
 ## Features
 
-- **Workflow DAG Visualization**: Interactive directed graph showing task dependencies with reversed arrows (task → dependency)
+- **Workflow DAG Visualization**: Interactive directed graph showing task dependencies (SVG: task → dependency)
 - **Timeline/Gantt Chart**: Visual representation of task schedules and timelines
 - **Excel-style Table Interface**: Edit tasks with inline preview and modal popup editors
 - **Task Management**: Create, edit, delete, and validate workflow tasks
+- **Multiple Dependencies**: Assign multiple dependencies per task via multi-select UI
 - **Knowledge Base Integration**: Markdown-based documentation linked to workflow tasks
 - **Section Filtering**: View tasks by section or all tasks combined
 - **Data Validation**: Built-in workflow validation with cycle detection
@@ -94,8 +95,8 @@ Runs on `http://127.0.0.1:8050`
   - Query parameter: `?section=<section_name>` for filtering
 
 - **`/update`** (POST) - Save workflow changes
-  - Accepts JSON with workflow data
-  - Validates and updates `workflow.json`
+  - Accepts form submission from the table UI (`id_0`, `task_0`, `next_to_0` as multi-select)
+  - Updates `workflow.json` and regenerates images
 
 - **`/validate`** (GET) - Workflow validation endpoint
   - Checks for cycles and data consistency
@@ -118,17 +119,19 @@ The workflow is stored in `data/workflow.json` with the following structure:
 
 ```json
 {
-  "tasks": [
+  "nodes": [
     {
-      "id": "unique_id",
-      "name": "Task Name",
+      "id": "a01",
+      "label": "Task Name",
+      "deadline": "YYYY-MM-DD",
+      "depends_on": ["dep_id_1", "dep_id_2"],
       "section": "Section Name",
-      "start_date": "YYYY-MM-DD",
-      "end_date": "YYYY-MM-DD",
       "doc": "Documentation text",
       "action": "Action description",
       "note": "Additional notes",
-      "dependencies": ["dep_id_1", "dep_id_2"]
+      "decision": false,
+      "qms_path": "static/qms/001_QMS_A.pdf",
+      "knowledge_dir": "static/knowledge/A"
     }
   ]
 }
@@ -163,12 +166,13 @@ The workflow is stored in `data/workflow.json` with the following structure:
 3. **Editing**: User modifies tasks in Excel-like table interface
 4. **Validation**: Client-side and server-side validation before saving
 5. **Persistence**: POST to `/update` saves changes to `workflow.json`
-6. **Regeneration**: Images regenerated on next application startup
+6. **Regeneration**: Images regenerated on startup and after each save
 
 ### DAG Generation
 
 - Uses NetworkX for graph structure
-- Arrow direction: task → dependency (reversed from typical dependency graphs)
+- SVG arrow direction: task → dependency
+- PNG arrow direction: dependency → task (Graphviz layout)
 - Layout options:
   - Pygraphviz (dot layout) if available
   - Matplotlib fallback with spring layout
@@ -181,7 +185,7 @@ The workflow is stored in `data/workflow.json` with the following structure:
 
 ## Known Limitations
 
-- Images regenerated only on application startup (not on workflow updates)
+- None specific to image regeneration (images regenerate on startup and on save)
 - Knowledge files must follow naming convention: `static/knowledge/<node_id>/<filename>.md`
 - Section filtering requires exact match of section names
 

@@ -1,0 +1,238 @@
+{
+  "nodes": [
+    {
+      "id": "a01",
+      "label": "企画UP",
+      "deadline": "2023-01-15",
+      "decision": false,
+      "note": "競合調査に時間を要したため早めの着手が必要",
+      "depends_on": [
+        "a02"
+      ],
+      "qms_path": "static/qms/001_QMS_A.pdf",
+      "knowledge_dir": "static/knowledge/A",
+      "action": "企画決裁承認"
+    },
+    {
+      "id": "a02",
+      "label": "DR0",
+      "deadline": "2023-01-28",
+      "decision": false,
+      "note": "春節休み前に部品手配を完了させること(先に〇〇手配)",
+      "depends_on": [
+        "a03"
+      ],
+      "qms_path": "static/qms/002_QMS_B.pdf",
+      "knowledge_dir": "static/knowledge/A",
+      "section": "商品A",
+      "doc": "構想設計書, デザン案",
+      "action": "デザイン決定"
+    },
+    {
+      "id": "a03",
+      "label": "DR1",
+      "deadline": "2023-02-26",
+      "decision": false,
+      "note": "",
+      "depends_on": [
+        "a04"
+      ],
+      "qms_path": "static/qms/003_QMS_C.pdf",
+      "knowledge_dir": "static/knowledge/A",
+      "section": "商品A",
+      "doc": "詳細設計書, コスト試算表",
+      "action": "金型手配承認"
+    },
+    {
+      "id": "a04",
+      "label": "DR2",
+      "deadline": "2023-03-01",
+      "decision": false,
+      "note": "早めに準備を行うこと",
+      "depends_on": [
+        "a05"
+      ],
+      "qms_path": "static/qms/004_QMS_D.pdf",
+      "knowledge_dir": "static/knowledge/A",
+      "section": "商品A",
+      "doc": "試作評価報告書",
+      "action": "ES試作判定"
+    },
+    {
+      "id": "a05",
+      "label": "AQ0",
+      "deadline": "2023-03-30",
+      "decision": false,
+      "note": "",
+      "depends_on": [
+        "a06"
+      ],
+      "qms_path": "static/qms/001_QMS_A.pdf",
+      "knowledge_dir": "static/knowledge/A",
+      "section": "商品A",
+      "doc": "品質保証計画書",
+      "action": "信頼性試験開始"
+    },
+    {
+      "id": "a06",
+      "label": "AQ1",
+      "deadline": "2023-04-15",
+      "decision": false,
+      "note": "商品BのDR2と同日開催回避のため日程調整済み",
+      "depends_on": [
+        "b04"
+      ],
+      "qms_path": "static/qms/002_QMS_B.pdf",
+      "knowledge_dir": "static/knowledge/A",
+      "section": "商品A",
+      "doc": "CS試作レポート",
+      "action": "量産金型修正指示"
+    },
+    {
+      "id": "a07",
+      "label": "AQ2",
+      "deadline": "2023-05-08",
+      "decision": false,
+      "note": "",
+      "depends_on": [
+        "a08"
+      ],
+      "qms_path": "static/qms/003_QMS_C.pdf",
+      "knowledge_dir": "static/knowledge/A",
+      "section": "商品A",
+      "doc": "最終製品仕様書",
+      "action": "量産移行判定"
+    },
+    {
+      "id": "a08",
+      "label": "発売",
+      "deadline": "2023-05-15",
+      "decision": false,
+      "note": "GW明けの物流混雑に注意",
+      "depends_on": [],
+      "qms_path": "static/qms/004_QMS_D.pdf",
+      "knowledge_dir": "static/knowledge/A",
+      "section": "商品A",
+      "doc": "プレスリリース",
+      "action": "出荷開始"
+    },
+    {
+      "id": "b01",
+      "label": "企画UP",
+      "deadline": "2023-02-15",
+      "decision": false,
+      "note": "",
+      "depends_on": [
+        "b02"
+      ],
+      "qms_path": "static/qms/001_QMS_A.pdf",
+      "knowledge_dir": "static/knowledge/B",
+      "section": "商品B",
+      "doc": "商品企画書 Ver.1.0",
+      "action": "企画決裁承認"
+    },
+    {
+      "id": "b02",
+      "label": "DR0",
+      "deadline": "2023-02-28",
+      "decision": false,
+      "note": "",
+      "depends_on": [
+        "b03"
+      ],
+      "qms_path": "static/qms/002_QMS_B.pdf",
+      "knowledge_dir": "static/knowledge/B",
+      "section": "商品B",
+      "doc": "構想設計書",
+      "action": "基本仕様Fix"
+    },
+    {
+      "id": "b03",
+      "label": "DR1",
+      "deadline": "2023-03-26",
+      "decision": false,
+      "note": "",
+      "depends_on": [
+        "b04"
+      ],
+      "qms_path": "static/qms/003_QMS_C.pdf",
+      "knowledge_dir": "static/knowledge/B",
+      "section": "商品B",
+      "doc": "詳細設計書",
+      "action": "試作手配"
+    },
+    {
+      "id": "b04",
+      "label": "DR2",
+      "deadline": "2023-04-01",
+      "decision": false,
+      "note": "商品AのAQ1とリソース重複注意",
+      "depends_on": [
+        "b05"
+      ],
+      "qms_path": "static/qms/004_QMS_D.pdf",
+      "knowledge_dir": "static/knowledge/B",
+      "section": "商品B",
+      "doc": "試作評価報告書",
+      "action": "AQ0判定準備"
+    },
+    {
+      "id": "b05",
+      "label": "AQ0",
+      "deadline": "2023-04-28",
+      "decision": false,
+      "note": "GWを挟むためリードタイム長めに設定",
+      "depends_on": [
+        "b06"
+      ],
+      "qms_path": "static/qms/001_QMS_A.pdf",
+      "knowledge_dir": "static/knowledge/B",
+      "section": "商品B",
+      "doc": "品質保証計画書",
+      "action": "GW前試験投入"
+    },
+    {
+      "id": "b06",
+      "label": "AQ1",
+      "deadline": "2023-05-15",
+      "decision": false,
+      "note": "稼働日が少ないため前倒し進行推奨",
+      "depends_on": [
+        "b07"
+      ],
+      "qms_path": "static/qms/002_QMS_B.pdf",
+      "knowledge_dir": "static/knowledge/B",
+      "section": "商品B",
+      "doc": "CS試作レポート",
+      "action": "修正確認"
+    },
+    {
+      "id": "b07",
+      "label": "AQ2",
+      "deadline": "2023-06-07",
+      "decision": false,
+      "note": "",
+      "depends_on": [
+        "b08"
+      ],
+      "qms_path": "static/qms/003_QMS_C.pdf",
+      "knowledge_dir": "static/knowledge/B",
+      "section": "商品B",
+      "doc": "最終製品仕様書",
+      "action": "量産可否判定"
+    },
+    {
+      "id": "b08",
+      "label": "発売",
+      "deadline": "2023-06-30",
+      "decision": false,
+      "note": "上期末の売上計上に間に合わせる",
+      "depends_on": [],
+      "qms_path": "static/qms/004_QMS_D.pdf",
+      "knowledge_dir": "static/knowledge/B",
+      "section": "商品B",
+      "doc": "販売マニュアル",
+      "action": "店頭導入"
+    }
+  ]
+}

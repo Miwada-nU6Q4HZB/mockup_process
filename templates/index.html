@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Visualization - Excel UI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 15px 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .toolbar {
+            padding: 10px 20px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            background: #f9f9f9;
+        }
+
+        .toolbar button, .toolbar a {
+            padding: 8px 14px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.2s;
+        }
+
+        .toolbar button:hover, .toolbar a:hover {
+            background: #e9e9e9;
+        }
+
+        .toolbar .btn-primary {
+            background: #0066cc;
+            color: white;
+            border-color: #0066cc;
+        }
+
+        .toolbar .btn-primary:hover {
+            background: #0052a3;
+        }
+
+        .toolbar .btn-validate {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+
+        .toolbar .btn-validate:hover {
+            background: #218838;
+        }
+
+        .content {
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        .form-section {
+            margin-bottom: 20px;
+        }
+
+        .form-section h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #333;
+            border-bottom: 2px solid #0066cc;
+            padding-bottom: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin-bottom: 15px;
+            background: white;
+            border: 1px solid #ddd;
+        }
+
+        thead {
+            background: #e8f0fe;
+            font-weight: bold;
+            color: #333;
+        }
+
+        th {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        tbody tr:hover {
+            background: #f0f0f0;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="checkbox"],
+        textarea,
+        select {
+            font-size: 12px;
+            padding: 4px 6px;
+            border: 1px solid #ccc;
+            border-radius: 2px;
+            font-family: Arial, sans-serif;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        textarea,
+        select {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input[type="checkbox"] {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        textarea {
+            min-height: 40px;
+            resize: vertical;
+        }
+
+        input[readonly] {
+            background: #e8e8e8;
+            cursor: not-allowed;
+        }
+
+        .images-section {
+            display: block;
+            margin-top: 20px;
+        }
+
+        .image-box {
+            border: 1px solid #ddd;
+            padding: 20px;
+            background: #f9f9f9;
+            text-align: center;
+        }
+
+        .image-box h4 {
+            font-size: 15px;
+            margin-bottom: 15px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .image-box img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .button-group button {
+            padding: 10px 20px;
+            font-size: 13px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background: white;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .button-group button:hover {
+            background: #e9e9e9;
+        }
+
+        .button-group .btn-save {
+            background: #0066cc;
+            color: white;
+            border-color: #0066cc;
+        }
+
+        .button-group .btn-save:hover {
+            background: #0052a3;
+        }
+
+        .info-section {
+            background: #e8f4f8;
+            border-left: 4px solid #0066cc;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+
+        .info-section strong {
+            color: #0052a3;
+        }
+
+        .link-cell {
+            text-align: center;
+            color: #0066cc;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .link-cell:hover {
+            text-decoration: underline;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 25px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            border-bottom: 2px solid #0066cc;
+            padding-bottom: 10px;
+        }
+
+        .modal-textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 10px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            resize: vertical;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-buttons button {
+            padding: 8px 15px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+
+        .modal-buttons .btn-save {
+            background: #0066cc;
+            color: white;
+            border-color: #0066cc;
+        }
+
+        .modal-buttons .btn-save:hover {
+            background: #0052a3;
+        }
+
+        .modal-buttons .btn-cancel {
+            background: white;
+            color: #333;
+        }
+
+        .modal-buttons .btn-cancel:hover {
+            background: #f0f0f0;
+        }
+
+        .text-preview {
+            padding: 4px;
+            min-height: 60px;
+            max-height: 60px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            cursor: pointer;
+            background: #f9f9f9;
+            border-radius: 2px;
+            font-size: 11px;
+            line-height: 1.3;
+            text-align: left;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+        }
+
+        .text-cell {
+            vertical-align: top;
+        }
+
+        .text-preview:hover {
+            background: #f0f0f0;
+            border: 1px solid #0066cc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            Workflow Visualization - Excel-Style Interface
+        </div>
+
+        <div class="toolbar">
+            <button type="submit" form="workflow-form" class="btn-primary">💾 Save All Changes</button>
+            <a href="/validate" class="btn-validate" target="_blank">✓ Validate Workflow</a>
+            <a href="/dag.png" target="_blank">🔗 View DAG</a>
+            <a href="/timeline.png" target="_blank">📊 View Timeline</a>
+            
+            <div style="margin-left: auto; display: flex; gap: 10px; align-items: center;">
+                <label for="section-filter" style="font-size: 13px;">Filter by Section:</label>
+                <select id="section-filter" onchange="window.location.href='/?section='+this.value" style="padding: 6px;">
+                    <option value="all" {% if not selected_section or selected_section == 'all' %}selected{% endif %}>All Sections</option>
+                    {% for section in all_sections %}
+                    <option value="{{ section }}" {% if selected_section == section %}selected{% endif %}>{{ section }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Information Section -->
+            <div class="info-section">
+                <strong>Information:</strong> Edit workflow tasks below. 
+                Click "Save All Changes" to persist to workflow.json. Images regenerate automatically.
+            </div>
+
+            <!-- Main Form -->
+            <form id="workflow-form" method="POST" action="/update">
+                <div class="form-section">
+                    <h3>Workflow Tasks</h3>
+
+                    {% if tasks %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 60px;">ID</th>
+                                <th style="width: 130px;">Task Name</th>
+                                <th style="width: 100px;">Section</th>
+                                <th style="width: 90px;">Start Date</th>
+                                <th style="width: 90px;">End Date</th>
+                                <th style="width: 80px;">Depends On</th>
+                                <th style="width: 60px;">Decision</th>
+                                <th style="width: 120px;">QMS Path</th>
+                                <th style="width: 120px;">Knowledge Dir</th>
+                                <th style="width: 100px;">Doc</th>
+                                <th style="width: 100px;">Action</th>
+                                <th style="width: 130px;">Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in tasks %}
+                            <tr>
+                                <td>
+                                    <input type="text" name="id_{{ loop.index0 }}"
+                                        value="{{ task.id }}" readonly>
+                                </td>
+                                <td>
+                                    <input type="text" name="task_{{ loop.index0 }}"
+                                        value="{{ task.task }}" required>
+                                </td>
+                                <td>
+                                    <input type="text" name="section_{{ loop.index0 }}"
+                                        value="{{ task.section }}">
+                                </td>
+                                <td>
+                                    <input type="date" name="start_{{ loop.index0 }}"
+                                        value="{{ task.start }}">
+                                </td>
+                                <td>
+                                    <input type="date" name="end_{{ loop.index0 }}"
+                                        value="{{ task.end }}">
+                                </td>
+                                <td>
+                                    <select name="next_to_{{ loop.index0 }}" style="width: 100%; padding: 4px;">
+                                        <option value="">-</option>
+                                        {% for t in all_tasks %}
+                                        <option value="{{ t.id }}" {% if task.next_to == t.id %}selected{% endif %}>{{ t.id }} - {{ t.task }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td style="text-align: center;">
+                                    <input type="checkbox" name="decision_{{ loop.index0 }}"
+                                        {% if task.decision %}checked{% endif %}>
+                                </td>
+                                <td>
+                                    {% if task.qms_path %}
+                                        <a href="/{{ task.qms_path }}" target="_blank" class="link-cell">📄 View</a>
+                                    {% else %}
+                                        <span style="color: #999;">-</span>
+                                    {% endif %}
+                                    <input type="text" name="qms_path_{{ loop.index0 }}"
+                                        value="{{ task.qms_path }}"
+                                        placeholder="static/qms/..." style="display: none;">
+                                </td>
+                                <td>
+                                    {% if task.knowledge_files and task.knowledge_files|length > 0 %}
+                                        <div style="margin-bottom: 6px;">
+                                            {% for f in task.knowledge_files %}
+                                                <div>
+                                                    <a href="{{ f.url }}" target="_blank" class="link-cell">📄 {{ f.label }}</a>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div style="color: #999; margin-bottom: 6px;">(no files)</div>
+                                    {% endif %}
+                                    <input type="text" name="knowledge_dir_{{ loop.index0 }}"
+                                        value="{{ task.knowledge_dir }}"
+                                        placeholder="static/knowledge/...">
+                                </td>
+                                <td class="text-cell">
+                                    <div class="text-preview" onclick="openModal('doc', {{ loop.index0 }})">
+                                        {{ task.doc | default('') | truncate(80, True, '...') }}
+                                    </div>
+                                    <textarea name="doc_{{ loop.index0 }}" style="display: none;">{{ task.doc }}</textarea>
+                                </td>
+                                <td class="text-cell">
+                                    <div class="text-preview" onclick="openModal('action', {{ loop.index0 }})">
+                                        {{ task.action | default('') | truncate(80, True, '...') }}
+                                    </div>
+                                    <textarea name="action_{{ loop.index0 }}" style="display: none;">{{ task.action }}</textarea>
+                                </td>
+                                <td class="text-cell">
+                                    <div class="text-preview" onclick="openModal('lesson', {{ loop.index0 }})">
+                                        {{ task.lesson | default('') | truncate(80, True, '...') }}
+                                    </div>
+                                    <textarea name="lesson_{{ loop.index0 }}" style="display: none;">{{ task.lesson }}</textarea>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p style="color: #999; text-align: center;">No tasks loaded yet.</p>
+                    {% endif %}
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn-save">💾 Save All Changes</button>
+                </div>
+            </form>
+
+            <div id="textModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header" id="modalTitle">Edit Text</div>
+                    <textarea id="modalTextarea" class="modal-textarea"></textarea>
+                    <div class="modal-buttons">
+                        <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+                        <button type="button" class="btn-save" onclick="saveModal()">Save</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualizations Section -->
+            <div class="form-section">
+                <h3>Visualizations</h3>
+                
+                <!-- Interactive Gantt Chart -->
+                <div style="margin-bottom: 30px;">
+                    <h4 style="margin-bottom: 10px;">Interactive Gantt Chart</h4>
+                    <div id="gantt-container" style="border: 1px solid #ddd; background: white; min-height: 400px; overflow-x: auto; overflow-y: auto;"></div>
+                </div>
+                
+                <div class="images-section">
+                    <div class="image-box">
+                        <h4>Workflow DAG (Directed Acyclic Graph)</h4>
+                        <div id="dag-svg-container" style="overflow: auto;">
+                            {% if dag_svg %}
+                                {{ dag_svg | safe }}
+                            {% else %}
+                                <img src="/dag.png" alt="DAG">
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <style>
+                .dag-node rect {
+                    transition: fill 0.2s, stroke 0.2s, stroke-width 0.2s;
+                }
+                .dag-node text {
+                    transition: fill 0.2s;
+                    pointer-events: none;
+                }
+                .dag-edge {
+                    transition: stroke 0.2s, stroke-width 0.2s;
+                }
+                .dag-node.highlighted rect {
+                    fill: #ff4444 !important;
+                    stroke: #cc0000 !important;
+                    stroke-width: 3 !important;
+                }
+                .dag-node.highlighted text {
+                    fill: white !important;
+                    font-weight: bold !important;
+                }
+                .dag-edge.highlighted {
+                    stroke: #ff4444 !important;
+                    stroke-width: 4 !important;
+                }
+                .dag-arrow-marker.highlighted {
+                    fill: #ff4444 !important;
+                }
+            </style>
+            
+            <script>
+            let currentModalType = null;
+            let currentModalIndex = null;
+
+            function openModal(fieldType, rowIndex) {
+                currentModalType = fieldType;
+                currentModalIndex = rowIndex;
+
+                const textarea = document.querySelector(`textarea[name="${fieldType}_${rowIndex}"]`);
+                const modal = document.getElementById('textModal');
+                const modalTitle = document.getElementById('modalTitle');
+                const modalTextarea = document.getElementById('modalTextarea');
+
+                const fieldLabels = { doc: 'Doc', action: 'Action', lesson: 'Note' };
+                modalTitle.textContent = `Edit ${fieldLabels[fieldType]} - Row ${rowIndex + 1}`;
+                modalTextarea.value = textarea ? textarea.value : '';
+                modal.style.display = 'block';
+                modalTextarea.focus();
+            }
+
+            function closeModal() {
+                const modal = document.getElementById('textModal');
+                modal.style.display = 'none';
+            }
+
+            function saveModal() {
+                const modalTextarea = document.getElementById('modalTextarea');
+                const textarea = document.querySelector(`textarea[name="${currentModalType}_${currentModalIndex}"]`);
+                if (textarea) {
+                    textarea.value = modalTextarea.value;
+                    const preview = textarea.closest('td').querySelector('.text-preview');
+                    if (preview) {
+                        const previewText = modalTextarea.value.slice(0, 80);
+                        preview.textContent = previewText + (modalTextarea.value.length > 80 ? '...' : '');
+                    }
+                }
+                closeModal();
+            }
+
+            window.addEventListener('click', (event) => {
+                const modal = document.getElementById('textModal');
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') {
+                    closeModal();
+                }
+            });
+
+            // Interactive Gantt Chart
+            let ganttTasks = {{ all_tasks | tojson }};
+            
+            function renderGanttChart(tasks) {
+                const container = document.getElementById('gantt-container');
+                
+                if (!tasks || tasks.length === 0) {
+                    container.innerHTML = '<p style="padding: 20px; color: #999;">No tasks to display</p>';
+                    return;
+                }
+                
+                // Parse dates and filter valid tasks
+                const validTasks = tasks.filter(t => {
+                    try {
+                        t.startDate = new Date(t.start);
+                        t.endDate = new Date(t.end);
+                        return !isNaN(t.startDate) && !isNaN(t.endDate);
+                    } catch (e) {
+                        return false;
+                    }
+                }).map(t => {
+                    t.durationDays = Math.max(1, Math.ceil((t.endDate - t.startDate) / (1000 * 60 * 60 * 24)));
+                    return t;
+                });
+                
+                if (validTasks.length === 0) {
+                    container.innerHTML = '<p style="padding: 20px; color: #999;">No valid tasks with dates</p>';
+                    return;
+                }
+                
+                // Find date range
+                const allDates = validTasks.flatMap(t => [t.startDate, t.endDate]);
+                const minDate = new Date(Math.min(...allDates));
+                const maxDate = new Date(Math.max(...allDates));
+                const totalDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24)) + 10;
+                
+                // Section colors
+                const sections = [...new Set(validTasks.map(t => t.section || 'Default'))];
+                const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
+                const colorMap = {};
+                sections.forEach((s, i) => colorMap[s] = colors[i % colors.length]);
+                
+                // Dimensions
+                const rowHeight = 30;
+                const labelWidth = 200;
+                const dayWidth = 20;
+                const chartWidth = totalDays * dayWidth;
+                const chartHeight = validTasks.length * rowHeight + 60;
+                
+                // Create SVG
+                let svg = `<svg width="${labelWidth + chartWidth + 20}" height="${chartHeight}" style="font-family: Arial, sans-serif; font-size: 11px;">`;
+                
+                // Draw grid and date labels
+                for (let day = 0; day <= totalDays; day += 7) {
+                    const x = labelWidth + day * dayWidth;
+                    svg += `<line x1="${x}" y1="40" x2="${x}" y2="${chartHeight}" stroke="#e0e0e0" stroke-width="1"/>`;
+                    const date = new Date(minDate);
+                    date.setDate(date.getDate() + day);
+                    svg += `<text x="${x}" y="30" fill="#666" font-size="10px">${date.toISOString().slice(0, 10)}</text>`;
+                }
+                
+                // Draw tasks
+                validTasks.forEach((task, i) => {
+                    const y = 50 + i * rowHeight;
+                    const dayOffset = Math.floor((task.startDate - minDate) / (1000 * 60 * 60 * 24));
+                    const x = labelWidth + dayOffset * dayWidth;
+                    const width = task.durationDays * dayWidth;
+                    const color = colorMap[task.section || 'Default'] || '#999';
+                    
+                    // Task label
+                    svg += `<text x="10" y="${y + 18}" fill="#333" class="task-label" data-task-id="${task.id}">${task.section || ''} - ${task.task}</text>`;
+                    
+                    // Task bar (default: green, selected: red)
+                    svg += `<rect x="${x}" y="${y + 5}" width="${width}" height="${rowHeight - 10}" 
+                                  fill="#4CAF50" stroke="#2E7D32" stroke-width="1" opacity="0.8" 
+                                  class="task-bar" data-task-id="${task.id}" 
+                                  style="cursor: pointer;"/>`;
+                });
+                
+                svg += '</svg>';
+                container.innerHTML = svg;
+                
+                // Add interactivity
+                const bars = container.querySelectorAll('.task-bar');
+                const labels = container.querySelectorAll('.task-label');
+                const tableRows = document.querySelectorAll('table tbody tr');
+                
+                let selectedTaskId = null;
+                
+                function highlightTask(taskId, highlight) {
+                    // Highlight bar
+                    bars.forEach(bar => {
+                        if (bar.dataset.taskId === taskId) {
+                            bar.setAttribute('fill', highlight ? '#f44336' : '#4CAF50');
+                            bar.setAttribute('stroke', highlight ? '#c62828' : '#2E7D32');
+                            bar.setAttribute('opacity', highlight ? '1' : '0.8');
+                            bar.setAttribute('stroke-width', highlight ? '2' : '1');
+                        }
+                    });
+                    
+                    // Highlight label
+                    labels.forEach(label => {
+                        if (label.dataset.taskId === taskId) {
+                            label.setAttribute('fill', highlight ? '#0066cc' : '#333');
+                            label.setAttribute('font-weight', highlight ? 'bold' : 'normal');
+                        }
+                    });
+                    
+                    // Highlight table row
+                    tableRows.forEach(row => {
+                        const firstCell = row.querySelector('td input[name^="id_"]');
+                        if (firstCell && firstCell.value === taskId) {
+                            row.style.backgroundColor = highlight ? '#e8f4f8' : '';
+                        }
+                    });
+                }
+                
+                // Click event for bars
+                bars.forEach(bar => {
+                    bar.addEventListener('click', () => {
+                        if (selectedTaskId === bar.dataset.taskId) {
+                            selectedTaskId = null;
+                            highlightTask(bar.dataset.taskId, false);
+                        } else {
+                            if (selectedTaskId) {
+                                highlightTask(selectedTaskId, false);
+                            }
+                            selectedTaskId = bar.dataset.taskId;
+                            highlightTask(bar.dataset.taskId, true);
+                        }
+                    });
+                    
+                    bar.addEventListener('mouseenter', () => {
+                        if (selectedTaskId !== bar.dataset.taskId) {
+                            bar.setAttribute('opacity', '0.9');
+                        }
+                    });
+                    
+                    bar.addEventListener('mouseleave', () => {
+                        if (selectedTaskId !== bar.dataset.taskId) {
+                            bar.setAttribute('opacity', '0.8');
+                        }
+                    });
+                });
+                
+                labels.forEach(label => {
+                    label.addEventListener('mouseenter', () => {
+                        if (selectedTaskId !== label.dataset.taskId) {
+                            highlightTask(label.dataset.taskId, true);
+                        }
+                    });
+                    label.addEventListener('mouseleave', () => {
+                        if (selectedTaskId !== label.dataset.taskId) {
+                            highlightTask(label.dataset.taskId, false);
+                        }
+                    });
+                });
+                
+                // Table row highlighting - click to select
+                tableRows.forEach(row => {
+                    const firstCell = row.querySelector('td input[name^="id_"]');
+                    if (firstCell) {
+                        const taskId = firstCell.value;
+                        
+                        row.addEventListener('click', () => {
+                            if (selectedTaskId === taskId) {
+                                selectedTaskId = null;
+                                highlightTask(taskId, false);
+                            } else {
+                                if (selectedTaskId) {
+                                    highlightTask(selectedTaskId, false);
+                                }
+                                selectedTaskId = taskId;
+                                highlightTask(taskId, true);
+                            }
+                        });
+                        
+                        row.addEventListener('mouseenter', () => {
+                            if (selectedTaskId !== taskId) {
+                                row.style.backgroundColor = '#f5f5f5';
+                            }
+                        });
+                        
+                        row.addEventListener('mouseleave', () => {
+                            if (selectedTaskId !== taskId) {
+                                row.style.backgroundColor = '';
+                            }
+                        });
+                    }
+                });
+            }
+            
+            // Initial render
+            renderGanttChart(ganttTasks);
+            
+            // Update Gantt Chart when start or end dates change
+            (function() {
+                // Handle start date changes
+                const startDateInputs = document.querySelectorAll('input[type="date"][name^="start_"]');
+                startDateInputs.forEach((input, index) => {
+                    input.addEventListener('change', (e) => {
+                        const newDate = e.target.value;
+                        if (ganttTasks[index]) {
+                            ganttTasks[index].start = newDate;
+                        }
+                        renderGanttChart(ganttTasks);
+                    });
+                });
+                
+                // Handle end date changes
+                const endDateInputs = document.querySelectorAll('input[type="date"][name^="end_"]');
+                endDateInputs.forEach((input, index) => {
+                    input.addEventListener('change', (e) => {
+                        const newDate = e.target.value;
+                        if (ganttTasks[index]) {
+                            ganttTasks[index].end = newDate;
+                        }
+                        renderGanttChart(ganttTasks);
+                    });
+                });
+            })();
+            
+            // DAG highlighting based on table row selection
+            (function() {
+                const tableRows = document.querySelectorAll('table tbody tr');
+                const dagNodes = document.querySelectorAll('.dag-node');
+                const dagEdges = document.querySelectorAll('.dag-edge');
+                
+                function highlightDAG(taskId, highlight) {
+                    // Highlight the selected node
+                    dagNodes.forEach(node => {
+                        if (node.dataset.nodeId === taskId) {
+                            if (highlight) {
+                                node.classList.add('highlighted');
+                            } else {
+                                node.classList.remove('highlighted');
+                            }
+                        }
+                    });
+                    
+                    // Highlight edges connected to the node
+                    dagEdges.forEach(edge => {
+                        const fromNode = edge.dataset.from;
+                        const toNode = edge.dataset.to;
+                        
+                        if (fromNode === taskId || toNode === taskId) {
+                            if (highlight) {
+                                edge.classList.add('highlighted');
+                            } else {
+                                edge.classList.remove('highlighted');
+                            }
+                        }
+                    });
+                }
+                
+                // Add click and hover events to table rows
+                tableRows.forEach(row => {
+                    const firstCell = row.querySelector('td input[name^="id_"]');
+                    if (firstCell) {
+                        const taskId = firstCell.value;
+                        
+                        row.addEventListener('click', () => {
+                            // Remove previous selection
+                            tableRows.forEach(r => r.style.outline = '');
+                            dagNodes.forEach(n => n.classList.remove('highlighted'));
+                            dagEdges.forEach(e => e.classList.remove('highlighted'));
+                            
+                            // Highlight current selection
+                            row.style.outline = '3px solid #ff4444';
+                            highlightDAG(taskId, true);
+                        });
+                        
+                        row.addEventListener('mouseenter', () => {
+                            if (!row.style.outline) {
+                                highlightDAG(taskId, true);
+                            }
+                        });
+                        
+                        row.addEventListener('mouseleave', () => {
+                            if (!row.style.outline) {
+                                highlightDAG(taskId, false);
+                            }
+                        });
+                    }
+                });
+                
+                // Add hover events to DAG nodes
+                dagNodes.forEach(node => {
+                    node.addEventListener('mouseenter', () => {
+                        highlightDAG(node.dataset.nodeId, true);
+                    });
+                    
+                    node.addEventListener('mouseleave', () => {
+                        let hasOutline = false;
+                        tableRows.forEach(row => {
+                            if (row.style.outline) {
+                                hasOutline = true;
+                            }
+                        });
+                        if (!hasOutline) {
+                            highlightDAG(node.dataset.nodeId, false);
+                        }
+                    });
+                });
+            })();
+            </script>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,20 @@
+[project]
+name = "workflow-visualization"
+version = "0.1.0"
+description = "Workflow Visualization Mock - Flask + HTML (No JavaScript) + Graphviz + Matplotlib"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "flask>=3.0.0",
+    "markdown>=3.5.0",
+    "matplotlib>=3.8.0",
+    "networkx>=3.2.0",
+    "pandas>=2.3.3",
+    "plotly>=6.5.2",
+    "python-dateutil>=2.8.2",
+    "reportlab>=4.0.0",
+]
+
+[project.optional-dependencies]
+graphviz = ["pygraphviz>=1.11"]
+dev = ["pytest>=7.4.0", "black>=23.0.0"]

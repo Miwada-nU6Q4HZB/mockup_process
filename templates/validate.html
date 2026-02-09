@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Validation Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 4px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #0066cc;
+            margin-bottom: 20px;
+        }
+        .valid-box {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            color: #155724;
+        }
+        .error-box, .warning-box {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            color: #721c24;
+        }
+        .warning-box {
+            background: #fff3cd;
+            border-color: #ffeeba;
+            color: #856404;
+        }
+        ul {
+            margin: 10px 0 0 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 8px 14px;
+            background: #0066cc;
+            color: white;
+            border-radius: 3px;
+        }
+        .back-link:hover {
+            background: #0052a3;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Workflow Validation Results</h1>
+        
+        {% if result.valid %}
+        <div class="valid-box">
+            <strong>✓ Valid Workflow</strong>
+            <p>All validation checks passed successfully!</p>
+        </div>
+        {% else %}
+        <div class="error-box">
+            <strong>✗ Invalid Workflow</strong>
+            {% if result.errors %}
+            <p>The following errors were found:</p>
+            <ul>
+                {% for error in result.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        {% if result.warnings %}
+        <div class="warning-box">
+            <strong>⚠ Warnings</strong>
+            <p>The following warnings were detected:</p>
+            <ul>
+                {% for warning in result.warnings %}
+                <li>{{ warning }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <a href="/" class="back-link">← Back to Main</a>
+    </div>
+</body>
+</html>

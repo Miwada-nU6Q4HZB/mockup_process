@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Engineering Schedule Editor</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; height: 100vh; overflow: hidden; }
+        .container { display: flex; height: 100vh; }
+        .left-panel { width: 30%; padding: 10px; overflow-y: auto; border-right: 1px solid #ccc; background: white; }
+        .right-panel { width: 70%; padding: 10px; overflow-y: auto; background: white; }
+        
+        label { font-weight: bold; font-size: 13px; display: block; margin-top: 5px; }
+        input[type="text"], input[type="date"] { width: 100%; padding: 5px; margin: 3px 0; font-size: 13px; border: 1px solid #ddd; }
+        textarea { width: 100%; padding: 5px; margin: 3px 0; font-size: 13px; border: 1px solid #ddd; min-height: 30px; }
+        select { width: 100%; padding: 5px; margin: 3px 0; font-size: 13px; border: 1px solid #ddd; }
+        
+        .input-group { background: #f1f3f5; padding: 10px; border-radius: 4px; margin-bottom: 10px; }
+        .button-group { display: flex; gap: 5px; margin-bottom: 10px; }
+        button { padding: 8px 12px; font-size: 12px; border: none; border-radius: 3px; cursor: pointer; color: white; }
+        .btn-add { background: #20c997; flex: 1; }
+        .btn-update { background: #0d6efd; flex: 1; }
+        .btn-delete { background: #dc3545; flex: 1; }
+        .btn-up, .btn-down { background: #6c757d; flex: 1; }
+        .btn-parse { background: #17a2b8; width: 100%; margin-bottom: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px; }
+        th, td { border: 1px solid #ddd; padding: 5px; text-align: left; }
+        th { background: #e9ecef; font-weight: bold; }
+        tr:hover { background: #f9f9f9; }
+        tr.selected { background: #bbdefb; }
+        
+        #gantt-graph { width: 100%; height: 100%; }
+        #mermaid-output { width: 100%; height: 200px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 左パネル -->
+        <div class="left-panel">
+            <h3 style="margin-bottom: 10px;">Project: Current</h3>
+            
+            <div class="input-group">
+                <label>Section</label>
+                <input type="text" id="input-section" placeholder="商品A">
+                
+                <label>Task</label>
+                <input type="text" id="input-task" placeholder="タスク名">
+                
+                <label>Start</label>
+                <input type="date" id="input-start">
+                
+                <label>End</label>
+                <input type="date" id="input-end">
+                
+                <label>Next ID</label>
+                <input type="text" id="input-next" placeholder="次のタスクID">
+            </div>
+            
+            <div class="input-group">
+                <label style="color: #0d6efd; font-weight: bold;">Docs / Actions / Lessons</label>
+                <textarea id="input-doc" placeholder="Documents"></textarea>
+                <textarea id="input-action" placeholder="Actions"></textarea>
+                <textarea id="input-lesson" placeholder="Lessons"></textarea>
+            </div>
+            
+            <div class="button-group">
+                <button class="btn-add" onclick="addTask()">Add</button>
+                <button class="btn-update" onclick="updateTask()">Upd</button>
+                <button class="btn-delete" onclick="deleteTask()">Del</button>
+            </div>
+            
+            <div class="button-group">
+                <button class="btn-up" onclick="moveUp()">▲</button>
+                <button class="btn-down" onclick="moveDown()">▼</button>
+            </div>
+            
+            <table id="task-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Task</th>
+                        <th>Start</th>
+                    </tr>
+                </thead>
+                <tbody id="task-tbody">
+                    <!-- 動的に埋め込み -->
+                </tbody>
+            </table>
+            
+            <button class="btn-parse" onclick="parseMermaid()">Import Mermaid</button>
+            <textarea id="mermaid-output" placeholder="Mermaid gantt code..."></textarea>
+        </div>
+        
+        <!-- 右パネル -->
+        <div class="right-panel">
+            {{ gantt_html | safe }}
+        </div>
+    </div>
+    
+    <script>
+        let allTasks = {{ tasks | tojson }};
+        let selectedRowIdx = -1;
+        
+        // ページ読み込み時にテーブル初期化
+        window.addEventListener('load', () => {
+            document.getElementById('mermaid-output').value = {{ mermaid_code | tojson }};
+            renderTable();
+        });
+        
+        function renderTable() {
+            const tbody = document.getElementById('task-tbody');
+            tbody.innerHTML = '';
+            allTasks.forEach((task, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${task.id}</td>
+                    <td>${task.task}</td>
+                    <td>${task.start}</td>
+                `;
+                tr.style.cursor = 'pointer';
+                tr.onclick = () => selectRow(idx);
+                if (idx === selectedRowIdx) tr.classList.add('selected');
+                tbody.appendChild(tr);
+            });
+        }
+        
+        function selectRow(idx) {
+            selectedRowIdx = idx;
+            renderTable();
+            const task = allTasks[idx];
+            document.getElementById('input-section').value = task.section || '';
+            document.getElementById('input-task').value = task.task || '';
+            document.getElementById('input-start').value = task.start || '';
+            document.getElementById('input-end').value = task.end || '';
+            document.getElementById('input-next').value = task.next_to || '';
+            document.getElementById('input-doc').value = task.doc || '';
+            document.getElementById('input-action').value = task.action || '';
+            document.getElementById('input-lesson').value = task.lesson || '';
+        }
+        
+        function addTask() {
+            const section = document.getElementById('input-section').value;
+            const task = document.getElementById('input-task').value;
+            const start = document.getElementById('input-start').value;
+            if (!section || !task) {
+                alert('Section と Task は必須です');
+                return;
+            }
+            const newTask = {
+                id: 'task_' + Date.now(),
+                section: section,
+                task: task,
+                start: start,
+                end: document.getElementById('input-end').value || start,
+                next_to: document.getElementById('input-next').value || '',
+                doc: document.getElementById('input-doc').value || '',
+                action: document.getElementById('input-action').value || '',
+                lesson: document.getElementById('input-lesson').value || ''
+            };
+            allTasks.push(newTask);
+            saveAndRefresh();
+        }
+        
+        function updateTask() {
+            if (selectedRowIdx < 0) {
+                alert('更新するタスクを選択してください');
+                return;
+            }
+            const task = allTasks[selectedRowIdx];
+            task.section = document.getElementById('input-section').value;
+            task.task = document.getElementById('input-task').value;
+            task.start = document.getElementById('input-start').value;
+            task.end = document.getElementById('input-end').value;
+            task.next_to = document.getElementById('input-next').value;
+            task.doc = document.getElementById('input-doc').value;
+            task.action = document.getElementById('input-action').value;
+            task.lesson = document.getElementById('input-lesson').value;
+            saveAndRefresh();
+        }
+        
+        function deleteTask() {
+            if (selectedRowIdx < 0) {
+                alert('削除するタスクを選択してください');
+                return;
+            }
+            if (confirm('削除しますか？')) {
+                allTasks.splice(selectedRowIdx, 1);
+                selectedRowIdx = -1;
+                saveAndRefresh();
+            }
+        }
+        
+        function moveUp() {
+            if (selectedRowIdx <= 0) return;
+            [allTasks[selectedRowIdx], allTasks[selectedRowIdx - 1]] = 
+            [allTasks[selectedRowIdx - 1], allTasks[selectedRowIdx]];
+            selectedRowIdx--;
+            saveAndRefresh();
+        }
+        
+        function moveDown() {
+            if (selectedRowIdx >= allTasks.length - 1) return;
+            [allTasks[selectedRowIdx], allTasks[selectedRowIdx + 1]] = 
+            [allTasks[selectedRowIdx + 1], allTasks[selectedRowIdx]];
+            selectedRowIdx++;
+            saveAndRefresh();
+        }
+        
+        function parseMermaid() {
+            const code = document.getElementById('mermaid-output').value;
+            fetch('/api/parse-mermaid', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: code })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.parsed) {
+                    allTasks = data.parsed;
+                    saveAndRefresh();
+                }
+            })
+            .catch(e => console.error(e));
+        }
+        
+        function saveAndRefresh() {
+            fetch('/api/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tasks: allTasks })
+            })
+            .then(() => {
+                location.reload();
+            })
+            .catch(e => console.error(e));
+        }
+    </script>
+</body>
+</html>
